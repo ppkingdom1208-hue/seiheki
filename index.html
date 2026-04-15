@@ -3,30 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>セレクト型・フードクラウド</title>
+    <title>リアルタイム・アンチ重なりクラウド</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; overflow: hidden; height: 100vh; margin: 0; user-select: none; touch-action: manipulation; }
+        body { 
+            background: #000; color: #fff; 
+            font-family: sans-serif; overflow: hidden; height: 100vh; margin: 0; user-select: none; touch-action: manipulation;
+        }
         .word-container { position: relative; width: 100%; height: 100%; }
         .word { 
             position: absolute; cursor: pointer; 
             transition: font-size 0.3s ease, color 0.3s ease, left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             font-weight: 900; white-space: nowrap; line-height: 1.1;
-            display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center;
+            transform: translate(-50%, -50%); /* 中心基準で配置 */
         }
-        .count-badge { font-size: 10px; opacity: 0.6; margin-top: 2px; }
+        .count-badge { font-size: 10px; opacity: 0.6; margin-top: 2px; pointer-events: none; }
         
-        /* 入場＆部屋選択画面 */
-        #login-overlay { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
-        input { padding: 15px; font-size: 18px; margin-bottom: 20px; border-radius: 8px; border: 2px solid #444; background: #222; color: #fff; text-align: center; width: 220px; }
-        .room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 250px; }
-        .room-btn { padding: 20px; background: #333; color: #fff; border: 2px solid #555; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 16px; transition: 0.2s; }
-        .room-btn:hover { background: #ff4500; border-color: #fff; }
+        #login-overlay { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        input { padding: 15px; font-size: 18px; margin-bottom: 15px; border-radius: 8px; border: 2px solid #444; background: #222; color: #fff; text-align: center; }
+        button { padding: 12px 30px; background: #ff4500; color: #fff; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 18px; }
         
         #log-panel { position: fixed; bottom: 20px; right: 20px; background: rgba(255,255,255,0.1); padding: 10px; font-size: 12px; width: 200px; border-radius: 5px; pointer-events: none; z-index: 1000; }
         #reset-btn { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid #444; font-size: 10px; padding: 5px 10px; cursor: pointer; z-index: 3000; border-radius: 4px; }
-        #room-indicator { position: fixed; top: 10px; left: 10px; font-size: 12px; color: #ff4500; font-weight: bold; z-index: 3000; }
     </style>
 </head>
 <body>
@@ -34,17 +34,10 @@
 <div id="login-overlay">
     <h2>名前を入力</h2>
     <input type="text" id="user-name" placeholder="名無しさん" maxlength="10">
-    <h3>参加する部屋を選択</h3>
-    <div class="room-grid">
-        <button class="room-btn" onclick="startGame(1)">部屋 1</button>
-        <button class="room-btn" onclick="startGame(2)">部屋 2</button>
-        <button class="room-btn" onclick="startGame(3)">部屋 3</button>
-        <button class="room-btn" onclick="startGame(4)">部屋 4</button>
-    </div>
+    <button id="start-btn">入場する</button>
 </div>
 
-<div id="room-indicator"></div>
-<button id="reset-btn">この部屋をリセット</button>
+<button id="reset-btn">リセット</button>
 <div class="word-container" id="container"></div>
 <div id="log-panel"></div>
 
@@ -62,67 +55,58 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     let myName = "名無し";
-    let currentRoom = 1;
-    let elements = [];
+    const foodWords = ["髪カーテン", "嘔吐", "雄っぱい", "着エロ", "子持ちシングルファザー", "太ももムチムチ", "NTR", "女性優位", "69", "寝バック","69","死ネタ","欠損","壁尻","達磨","性転換","主従逆転","出られない部屋シリーズ","手ックス","バター犬"];
+    const elements = [];
 
-    // 部屋ごとのワードリスト（適当に変えてOK！）
-    const roomWords = {
-        1: ["髪カーテン", "嘔吐", "雄っぱい", "着エロ", "子持ちシングルファザー", "太ももムチムチ", "NTR", "女性優位", "69", "寝バック","69","死ネタ","欠損","壁尻","達磨","性転換","主従逆転","出られない部屋シリーズ","手ックス","バター犬"],
-        2: "エロトラップダンジョン","生殖機能無い人外がセックス","感覚遮断","3P","服を溶かす薬or粘液","洗脳","よしよしいい子セックス","尻舐め","感覚共有","叔父と姪","エルフ奴隷",アナル開発","剃毛","おっぱいで窒息","家畜","パートナー交換","射精管理","クソデカ系"],
-        3: ["監禁","カントボーイ","緊縛","腹パン","ふたなり","バース系","処女返り","首筋","百合","ケモノ","ペニバン","オスケモ","睡眠姦","歯型","ゴム無し無責任生セックス","オフィスH","結腸攻め","快楽落ち","アへ顔],
-        4: ["モブおじ姦","ポリネシアンセックス","耳責め","おねショタ","石固め","太腿吸血","痴漢","素股","オナ観察する","兜合わせ","オナバレ","感度3000倍","薬キメ","手マン","女装","汗で張り付く髪","尿道攻め","デフォルメ系の絵柄のエロ漫画","種付けプレス"]
-    };
-
-    function startGame(roomNum) {
+    document.getElementById('start-btn').addEventListener('click', () => {
         const val = document.getElementById('user-name').value;
         if(val) myName = val;
-        currentRoom = roomNum;
         document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('room-indicator').innerText = `ROOM ${currentRoom} に参加中`;
         setupGame();
-    }
+    });
 
     document.getElementById('reset-btn').addEventListener('click', () => {
-        if(confirm(`部屋 ${currentRoom} のデータをリセットしますか？`)) {
-            db.ref(`room_${currentRoom}`).remove();
+        if(confirm("全リセットしますか？")) {
+            db.ref('foods').remove();
+            db.ref('logs').remove();
             location.reload();
         }
     });
 
     function setupGame() {
         const container = document.getElementById('container');
-        const words = roomWords[currentRoom]; // 選択した部屋のワードを取得
         
-        words.forEach((text) => {
+        foodWords.forEach((text) => {
             const el = document.createElement('div');
             el.className = 'word';
             el.innerHTML = `<span>${text}</span><span class="count-badge">0</span>`;
-            el.style.left = `${Math.random() * 60 + 20}%`;
-            el.style.top = `${Math.random() * 60 + 20}%`;
+            
+            // 初回バラバラ配置
+            el.style.left = `${Math.random() * 80 + 10}%`;
+            el.style.top = `${Math.random() * 80 + 10}%`;
             container.appendChild(el);
             elements.push(el);
 
-            // 部屋ごとのパス（room_1/foods/ワード名）でデータを管理
-            const foodPath = `room_${currentRoom}/foods/${text}`;
-            db.ref(foodPath).on('value', (snap) => {
+            db.ref('foods/' + text).on('value', (snap) => {
                 const count = snap.val() || 0;
-                const size = Math.min(24 + (count * 4), 100); 
+                const size = Math.min(24 + (count * 4), 90); 
                 el.style.fontSize = `${size}px`;
                 el.querySelector('.count-badge').innerText = count;
                 el.style.color = count > 0 ? `rgb(255, ${Math.max(0, 255-count*15)}, ${Math.max(0, 255-count*30)})` : "#fff";
                 el.style.zIndex = count + 10;
+
+                // 重なり回避ロジック発動
                 adjustPositions();
             });
 
             el.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
-                db.ref(foodPath).transaction(c => (c || 0) + 1);
-                db.ref(`room_${currentRoom}/logs`).push(`${myName}が「${text}」を育成！`);
+                db.ref('foods/' + text).transaction(c => (c || 0) + 1);
+                db.ref('logs').push(`${myName}が「${text}」を育成！`);
             });
         });
 
-        // ログも部屋ごとに分ける
-        db.ref(`room_${currentRoom}/logs`).limitToLast(5).on('child_added', (snap) => {
+        db.ref('logs').limitToLast(5).on('child_added', (snap) => {
             const entry = document.createElement('div');
             entry.innerText = snap.val();
             const panel = document.getElementById('log-panel');
@@ -131,24 +115,37 @@
         });
     }
 
+    // 簡易衝突回避アルゴリズム
     function adjustPositions() {
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 5; i++) { // 精度を上げるため数回繰り返す
             elements.forEach(elA => {
                 elements.forEach(elB => {
                     if (elA === elB) return;
+
                     const rA = elA.getBoundingClientRect();
                     const rB = elB.getBoundingClientRect();
-                    const padding = 15;
-                    const isOverlapping = !(rB.left - padding > rA.right + padding || rB.right + padding < rA.left - padding || rB.top - padding > rA.bottom + padding || rB.bottom + padding < rA.top - padding);
+
+                    // 衝突判定（少し余裕を持たせる）
+                    const padding = 10;
+                    const isOverlapping = !(rB.left - padding > rA.right + padding || 
+                                           rB.right + padding < rA.left - padding || 
+                                           rB.top - padding > rA.bottom + padding || 
+                                           rB.bottom + padding < rA.top - padding);
+
                     if (isOverlapping) {
+                        // 重なっていたら反対方向に押し出す
                         const diffX = (rA.left + rA.width/2) - (rB.left + rB.width/2);
                         const diffY = (rA.top + rA.height/2) - (rB.top + rB.height/2);
-                        let moveX = diffX > 0 ? 3 : -3;
-                        let moveY = diffY > 0 ? 3 : -3;
+                        
+                        let moveX = diffX > 0 ? 2 : -2;
+                        let moveY = diffY > 0 ? 2 : -2;
+
                         const newLeft = parseFloat(elA.style.left) + moveX;
                         const newTop = parseFloat(elA.style.top) + moveY;
-                        if (newLeft > 15 && newLeft < 85) elA.style.left = `${newLeft}%`;
-                        if (newTop > 15 && newTop < 85) elA.style.top = `${newTop}%`;
+
+                        // 画面外へ逃げないように制限(10%~90%以内)
+                        if (newLeft > 10 && newLeft < 90) elA.style.left = `${newLeft}%`;
+                        if (newTop > 10 && newTop < 90) elA.style.top = `${newTop}%`;
                     }
                 });
             });
