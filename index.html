@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>リアルタイム・アンチ重なりクラウド</title>
+    <title>リアルタイム・フードクラウド</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
@@ -17,7 +17,7 @@
             transition: font-size 0.3s ease, color 0.3s ease, left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             font-weight: 900; white-space: nowrap; line-height: 1.1;
             display: flex; flex-direction: column; align-items: center;
-            transform: translate(-50%, -50%); /* 中心基準で配置 */
+            transform: translate(-50%, -50%);
         }
         .count-badge { font-size: 10px; opacity: 0.6; margin-top: 2px; pointer-events: none; }
         
@@ -32,16 +32,17 @@
 <body>
 
 <div id="login-overlay">
-    <h2>名前を入力</h2>
+    <h2>名前を入力して参加</h2>
     <input type="text" id="user-name" placeholder="名無しさん" maxlength="10">
     <button id="start-btn">入場する</button>
 </div>
 
-<button id="reset-btn">リセット</button>
+<button id="reset-btn">データをリセット</button>
 <div class="word-container" id="container"></div>
 <div id="log-panel"></div>
 
 <script>
+    // --- Firebase設定 ---
     const firebaseConfig = {
         apiKey: "AIzaSyC-FD8cg58fb6erMxFPZYQgvTzxQS544F8",
         authDomain: "nicoojitestproject.firebaseapp.com",
@@ -55,6 +56,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     let myName = "名無し";
+    // ワードリスト
     const foodWords = ["エロトラップダンジョン","生殖機能無い人外がセックス","感覚遮断","3P","服を溶かす薬or粘液","洗脳","よしよしいい子セックス","尻舐め","感覚共有","叔父と姪","エルフ奴隷",アナル開発","剃毛","おっぱいで窒息","家畜","パートナー交換","射精管理","クソデカ系"];
     const elements = [];
 
@@ -66,7 +68,7 @@
     });
 
     document.getElementById('reset-btn').addEventListener('click', () => {
-        if(confirm("全リセットしますか？")) {
+        if(confirm("全データをリセットしますか？")) {
             db.ref('foods').remove();
             db.ref('logs').remove();
             location.reload();
@@ -80,8 +82,6 @@
             const el = document.createElement('div');
             el.className = 'word';
             el.innerHTML = `<span>${text}</span><span class="count-badge">0</span>`;
-            
-            // 初回バラバラ配置
             el.style.left = `${Math.random() * 80 + 10}%`;
             el.style.top = `${Math.random() * 80 + 10}%`;
             container.appendChild(el);
@@ -94,9 +94,7 @@
                 el.querySelector('.count-badge').innerText = count;
                 el.style.color = count > 0 ? `rgb(255, ${Math.max(0, 255-count*15)}, ${Math.max(0, 255-count*30)})` : "#fff";
                 el.style.zIndex = count + 10;
-
-                // 重なり回避ロジック発動
-                adjustPositions();
+                adjustPositions(); // 文字が変化するたびに重なりをチェック
             });
 
             el.addEventListener('pointerdown', (e) => {
@@ -115,35 +113,22 @@
         });
     }
 
-    // 簡易衝突回避アルゴリズム
     function adjustPositions() {
-        for (let i = 0; i < 5; i++) { // 精度を上げるため数回繰り返す
+        for (let i = 0; i < 3; i++) {
             elements.forEach(elA => {
                 elements.forEach(elB => {
                     if (elA === elB) return;
-
                     const rA = elA.getBoundingClientRect();
                     const rB = elB.getBoundingClientRect();
-
-                    // 衝突判定（少し余裕を持たせる）
                     const padding = 10;
-                    const isOverlapping = !(rB.left - padding > rA.right + padding || 
-                                           rB.right + padding < rA.left - padding || 
-                                           rB.top - padding > rA.bottom + padding || 
-                                           rB.bottom + padding < rA.top - padding);
-
+                    const isOverlapping = !(rB.left - padding > rA.right + padding || rB.right + padding < rA.left - padding || rB.top - padding > rA.bottom + padding || rB.bottom + padding < rA.top - padding);
                     if (isOverlapping) {
-                        // 重なっていたら反対方向に押し出す
                         const diffX = (rA.left + rA.width/2) - (rB.left + rB.width/2);
                         const diffY = (rA.top + rA.height/2) - (rB.top + rB.height/2);
-                        
                         let moveX = diffX > 0 ? 2 : -2;
                         let moveY = diffY > 0 ? 2 : -2;
-
                         const newLeft = parseFloat(elA.style.left) + moveX;
                         const newTop = parseFloat(elA.style.top) + moveY;
-
-                        // 画面外へ逃げないように制限(10%~90%以内)
                         if (newLeft > 10 && newLeft < 90) elA.style.left = `${newLeft}%`;
                         if (newTop > 10 && newTop < 90) elA.style.top = `${newTop}%`;
                     }
