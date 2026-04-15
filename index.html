@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>リアルタイム・フードクラウド</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body { 
+            background: #000; color: #fff; 
+            font-family: sans-serif; overflow: hidden; height: 100vh; margin: 0; user-select: none; touch-action: manipulation;
+        }
+        .word-container { position: relative; width: 100%; height: 100%; }
+        .word { 
+            position: absolute; cursor: pointer; 
+            transition: font-size 0.3s ease, color 0.3s ease, left 0.5s ease, top 0.5s ease;
+            font-weight: 900; white-space: nowrap; line-height: 1.1;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .count-badge { font-size: 12px; font-weight: normal; opacity: 0.6; margin-top: 2px; background: rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 3px; }
+        
+        #login-overlay { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        input { padding: 15px; font-size: 18px; margin-bottom: 15px; border-radius: 8px; border: 2px solid #444; background: #222; color: #fff; text-align: center; }
+        button { padding: 12px 30px; background: #ff4500; color: #fff; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 18px; }
+        
+        #log-panel { position: fixed; bottom: 20px; right: 20px; background: rgba(255,255,255,0.1); padding: 10px; font-size: 12px; width: 220px; border-radius: 5px; pointer-events: none; z-index: 1000; }
+        
+        #reset-btn { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid #444; font-size: 10px; padding: 5px 10px; cursor: pointer; z-index: 3000; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="login-overlay">
+    <h2>名前を入力して参加</h2>
+    <input type="text" id="user-name" placeholder="名無しさん" maxlength="10">
+    <button id="start-btn">入場する</button>
+</div>
+
+<button id="reset-btn">データをリセット</button>
+
+<div class="word-container" id="container"></div>
+<div id="log-panel"></div>
+
+<script>
+    // URL組み込み済み設定
+    const firebaseConfig = {
+        apiKey: "AIzaSyC-FD8cg58fb6erMxFPZYQgvTzxQS544F8",
+        authDomain: "nicoojitestproject.firebaseapp.com",
+        databaseURL: "https://nicoojitestproject-default-rtdb.firebaseio.com", 
+        projectId: "nicoojitestproject",
+        storageBucket: "nicoojitestproject.firebasestorage.app",
+        messagingSenderId: "1032313219092",
+        appId: "1:1032313219092:web:c13276996f8bfcc3dd1f01"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let myName = "名無し";
+
+    // 文言を変えたい時はここをいじる
+    const foodWords = ["髪カーテン", "嘔吐", "雄っぱい", "着エロ", "子持ちシングルファザー", "太ももムチムチ", "NTR", "唐揚げ", "女性優位", "69", "女性優位", "寝バック", "死ネタ", "欠損", "壁尻", "達磨", "性転換"];
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+        const val = document.getElementById('user-name').value;
+        if(val) myName = val;
+        document.getElementById('login-overlay').style.display = 'none';
+        setupGame();
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+        if(confirm("全データを消去しますか？")) {
+            db.ref('foods').remove();
+            db.ref('logs').remove();
+            location.reload();
+        }
+    });
+
+    function setupGame() {
+        const container = document.getElementById('container');
+        
+        foodWords.forEach((text) => {
+            const el = document.createElement('div');
+            el.className = 'word';
+            el.innerHTML = `<span>${text}</span><span class="count-badge">0 clicks</span>`;
+            
+            // 初期配置
+            const setInitialPos = () => {
+                el.style.left = `${Math.random() * 60 + 20}%`;
+                el.style.top = `${Math.random() * 60 + 20}%`;
+            };
+            setInitialPos();
+            container.appendChild(el);
+
+            db.ref('foods/' + text).on('value', (snap) => {
+                const count = snap.val() || 0;
+                const size = Math.min(24 + (count * 4), 100); 
+                el.style.fontSize = `${size}px`;
+                el.querySelector('.count-badge').innerText = `${count} clicks`; 
+                
+                const g = Math.max(0, 255 - (count * 15));
+                const b = Math.max(0, 255 - (count * 30));
+                el.style.color = count > 0 ? `rgb(255, ${g}, ${b})` : "#fff";
+                el.style.zIndex = count + 10;
+
+                // クリックされるたびに少しだけ動かして重なりを防ぐ
+                if(count > 0) {
+                    const l = parseFloat(el.style.left);
+                    const t = parseFloat(el.style.top);
+                    el.style.left = `${l + (Math.random() - 0.5) * 5}%`;
+                    el.style.top = `${t + (Math.random() - 0.5) * 5}%`;
+                } else {
+                    setInitialPos(); // リセット時は中央寄りに戻す
+                }
+            });
+
+            el.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                db.ref('foods/' + text).transaction(c => (c || 0) + 1);
+                db.ref('logs').push(`${myName}が「${text}」を育成！`);
+            });
+        });
+
+        db.ref('logs').limitToLast(5).on('child_added', (snap) => {
+            const entry = document.createElement('div');
+            entry.innerText = snap.val();
+            const panel = document.getElementById('log-panel');
+            panel.appendChild(entry);
+            if(panel.childNodes.length > 5) panel.removeChild(panel.firstChild);
+        });
+    }
+</script>
+</body>
+</html>
