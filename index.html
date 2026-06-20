@@ -2,140 +2,444 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>リアルタイム・フードクラウド</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOICHI ARCHIVE</title>
     <style>
-        body { 
-            background: #000; color: #fff; 
-            font-family: sans-serif; overflow: hidden; height: 100vh; margin: 0; user-select: none; touch-action: manipulation;
+        /* --- 1. グローバルスタイル（リセット & 統一） --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        .word-container { position: relative; width: 100%; height: 100%; }
-        .word { 
-            position: absolute; cursor: pointer; 
-            transition: font-size 0.3s ease, color 0.3s ease, left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            font-weight: 900; white-space: nowrap; line-height: 1.1;
-            display: flex; flex-direction: column; align-items: center;
-            transform: translate(-50%, -50%);
+        body {
+            background-color: #08080a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
-        .count-badge { font-size: 10px; opacity: 0.6; margin-top: 2px; pointer-events: none; }
+
+        /* --- 2. ヘンダー（ミニマル & ハイエンド） --- */
+        header {
+            padding: 100px 40px 60px 40px;
+            text-align: left; /* 左寄せにすることで、モダンな建築や写真集のようなレイアウトに */
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        header h1 {
+            font-size: 2rem;
+            font-weight: 200;
+            letter-spacing: 14px;
+            color: #ffffff;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+
+        /* --- 3. メインギャラリー（シネマティック・フルスクリーン） --- */
+        .gallery-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 40px 100px 40px;
+            display: grid;
+            /* 画面幅に合わせて滑らかに列数を可変。最小幅を320pxにして余裕を持たせる */
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px; /* 詰まりすぎず、離れすぎない洗練された余白 */
+        }
+
+        /* --- 4. ギャラリーアイテム（圧倒的な立体感とエフェクト） --- */
+        .gallery-item {
+            position: relative;
+            background-color: #101014;
+            overflow: hidden;
+            cursor: pointer;
+            aspect-ratio: 4 / 5; /* 縦横比を固定し、ポートフォリオとしての美しさを統一 */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            /* イージング関数を調整し、極上のヌルヌル感を演出 */
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), 
+                        box-shadow 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
         
-        #login-overlay { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-        input { padding: 15px; font-size: 18px; margin-bottom: 15px; border-radius: 8px; border: 2px solid #444; background: #222; color: #fff; text-align: center; }
-        button { padding: 12px 30px; background: #ff4500; color: #fff; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 18px; }
+        /* ホバー時に手前に心地よく浮き出る */
+        .gallery-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+            z-index: 2;
+        }
+
+        /* 画像自体のエフェクト：初期状態は少し暗く、うっすらブラー（ノイズ） */
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            filter: brightness(0.75) blur(0px);
+            transform: scale(1.0);
+            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), 
+                        filter 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* ホバー時に画像が奥へ沈み込みながら、鮮明に光り輝く */
+        .gallery-item:hover img {
+            transform: scale(1.08);
+            filter: brightness(1.05) blur(0px);
+        }
+
+        /* --- 5. キャプション（絵を邪魔しないオーバーレイ） --- */
+        .caption-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 40px 24px 24px 24px;
+            /* 下から上へ滑らかなグラデーションを敷いて文字の視認性を確保 */
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* ホバーした時だけ、静かに美しく浮かび上がる */
+        .gallery-item:hover .caption-overlay {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .caption-title {
+            font-size: 0.95rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        /* --- 6. モーダル（ガラスモーフィズムを駆使した没入空間） --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(4, 4, 6, 0.85);
+            /* 背景をボカす最新のエフェクト。これだけで一気にプロ感が出ます */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
         
-        #log-panel { position: fixed; bottom: 20px; right: 20px; background: rgba(255,255,255,0.1); padding: 10px; font-size: 12px; width: 200px; border-radius: 5px; pointer-events: none; z-index: 1000; }
-        #reset-btn { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid #444; font-size: 10px; padding: 5px 10px; cursor: pointer; z-index: 3000; border-radius: 4px; }
+        .modal.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .modal-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        .modal-content {
+            max-width: 95%;
+            max-height: 75vh;
+            object-fit: contain;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.9);
+            transform: scale(0.95);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        #modalCaption {
+            margin-top: 24px;
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 200;
+            letter-spacing: 4px;
+            text-align: center;
+            opacity: 0.9;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 30px;
+            font-weight: 100;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .close-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.15);
+            transform: rotate(90deg);
+        }
+
+        /* --- 7. レスポンシブ（スマホ最適化） --- */
+        @media (max-width: 768px) {
+            header {
+                padding: 60px 24px 40px 24px;
+            }
+            header h1 {
+                font-size: 1.5rem;
+                letter-spacing: 8px;
+            }
+            .gallery-container {
+                padding: 0 24px 60px 24px;
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 12px;
+            }
+            /* スマホはホバーがないため、常にキャプションをうっすら表示させておく */
+            .caption-overlay {
+                opacity: 1;
+                transform: translateY(0);
+                background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+                padding: 20px 16px 12px 16px;
+            }
+            .close-btn {
+                top: 20px;
+                right: 20px;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div id="login-overlay">
-    <h2>名前を入力して参加</h2>
-    <input type="text" id="user-name" placeholder="名無しさん" maxlength="10">
-    <button id="start-btn">入場する</button>
-</div>
+    <header>
+        <h1>YOICHI ARCHIVE</h1>
+    </header>
 
-<button id="reset-btn">データをリセット</button>
-<div class="word-container" id="container"></div>
-<div id="log-panel"></div>
+    <main class="gallery-container">
+        <!-- 1〜10枚目 -->
+        <div class="gallery-item" onclick="openModal('シスター2.png', 'Sisterhood II')">
+            <img src="シスター2.png" alt="Sisterhood II">
+            <div class="caption-overlay">
+                <div class="caption-title">Sisterhood II</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('スーツおじ.png', 'The Gentleman in Suit')">
+            <img src="スーツおじ.png" alt="The Gentleman in Suit">
+            <div class="caption-overlay">
+                <div class="caption-title">The Gentleman in Suit</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('バー.png', 'Midnight Lounge')">
+            <img src="バー.png" alt="Midnight Lounge">
+            <div class="caption-overlay">
+                <div class="caption-title">Midnight Lounge</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('バースデー2026.png', 'Anniversary 2026')">
+            <img src="バースデー2026.png" alt="Anniversary 2026">
+            <div class="caption-overlay">
+                <div class="caption-title">Anniversary 2026</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('demon.png', 'Demon\'s Whisper')">
+            <img src="demon.png" alt="Demon's Whisper">
+            <div class="caption-overlay">
+                <div class="caption-title">Demon's Whisper</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('あーん.png', 'Sweet Temptation')">
+            <img src="あーん.png" alt="Sweet Temptation">
+            <div class="caption-overlay">
+                <div class="caption-title">Sweet Temptation</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('エクスタシー.png', 'Ecstasy')">
+            <img src="エクスタシー.png" alt="Ecstasy">
+            <div class="caption-overlay">
+                <div class="caption-title">Ecstasy</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('オールバックおじ.png', 'Slick Back Elegance')">
+            <img src="オールバックおじ.png" alt="Slick Back Elegance">
+            <div class="caption-overlay">
+                <div class="caption-title">Slick Back Elegance</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('おはよう.png', 'Good Morning, Daylight')">
+            <img src="おはよう.png" alt="Good Morning, Daylight">
+            <div class="caption-overlay">
+                <div class="caption-title">Good Morning, Daylight</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('こあら.png', 'Coala Hug')">
+            <img src="こあら.png" alt="Coala Hug">
+            <div class="caption-overlay">
+                <div class="caption-title">Coala Hug</div>
+            </div>
+        </div>
 
-<script>
-    // --- Firebase設定 ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyC-FD8cg58fb6erMxFPZYQgvTzxQS544F8",
-        authDomain: "nicoojitestproject.firebaseapp.com",
-        databaseURL: "https://nicoojitestproject-default-rtdb.firebaseio.com", 
-        projectId: "nicoojitestproject",
-        storageBucket: "nicoojitestproject.firebasestorage.app",
-        messagingSenderId: "1032313219092",
-        appId: "1:1032313219092:web:c13276996f8bfcc3dd1f01"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    let myName = "名無し";
-    // ワードリスト
-    const foodWords = ["エロトラップダンジョン","生殖機能無い人外がセックス","感覚遮断","3P","服を溶かす薬or粘液","洗脳","よしよしいい子セックス","尻舐め","感覚共有","叔父と姪","エルフ奴隷",アナル開発","剃毛","おっぱいで窒息","家畜","パートナー交換","射精管理","クソデカ系"];
-    const elements = [];
+        <!-- 11〜20枚目 -->
+        <div class="gallery-item" onclick="openModal('赤鬼.png', 'Crimson Ogre')">
+            <img src="赤鬼.png" alt="Crimson Ogre">
+            <div class="caption-overlay">
+                <div class="caption-title">Crimson Ogre</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('断罪ギルティ.png', 'Guilty Judgment')">
+            <img src="断罪ギルティ.png" alt="Guilty Judgment">
+            <div class="caption-overlay">
+                <div class="caption-title">Guilty Judgment</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('みにおじ.png', 'Chibi Gentleman')">
+            <img src="みにおじ.png" alt="Chibi Gentleman">
+            <div class="caption-overlay">
+                <div class="caption-title">Chibi Gentleman</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('雨の向こう.png', 'Beyond the Rain')">
+            <img src="雨の向こう.png" alt="Beyond the Rain">
+            <div class="caption-overlay">
+                <div class="caption-title">Beyond the Rain</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('騎手おじ.png', 'The Jockey\'s Pride')">
+            <img src="騎手おじ.png" alt="The Jockey's Pride">
+            <div class="caption-overlay">
+                <div class="caption-title">The Jockey's Pride</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('喫煙おじ.png', 'Purple Smoke')">
+            <img src="喫煙おじ.png" alt="Purple Smoke">
+            <div class="caption-overlay">
+                <div class="caption-title">Purple Smoke</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('競馬おじ.png', 'Trackside Vagabond')">
+            <img src="競馬おじ.png" alt="Trackside Vagabond">
+            <div class="caption-overlay">
+                <div class="caption-title">Trackside Vagabond</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('限界アイドル.png', 'Fading Idol')">
+            <img src="限界アイドル.png" alt="Fading Idol">
+            <div class="caption-overlay">
+                <div class="caption-title">Fading Idol</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('向こう側.png', 'The Other Side')">
+            <img src="向こう側.png" alt="The Other Side">
+            <div class="caption-overlay">
+                <div class="caption-title">The Other Side</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('雑誌表紙用.png', 'Cover Story')">
+            <img src="雑誌表紙用.png" alt="Cover Story">
+            <div class="caption-overlay">
+                <div class="caption-title">Cover Story</div>
+            </div>
+        </div>
 
-    document.getElementById('start-btn').addEventListener('click', () => {
-        const val = document.getElementById('user-name').value;
-        if(val) myName = val;
-        document.getElementById('login-overlay').style.display = 'none';
-        setupGame();
-    });
+        <!-- 21〜29枚目 -->
+        <div class="gallery-item" onclick="openModal('無題2.png', 'Untitled No.2')">
+            <img src="無題2.png" alt="Untitled No.2">
+            <div class="caption-overlay">
+                <div class="caption-title">Untitled No.2</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('裏垢.png', 'Secret Account')">
+            <img src="裏垢.png" alt="Secret Account">
+            <div class="caption-overlay">
+                <div class="caption-title">Secret Account</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('裏垢男子.png', 'Behind the Screen')">
+            <img src="裏垢男子.png" alt="Behind the Screen">
+            <div class="caption-overlay">
+                <div class="caption-title">Behind the Screen</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('涙海.png', 'Ocean of Tears')">
+            <img src="涙海.png" alt="Ocean of Tears">
+            <div class="caption-overlay">
+                <div class="caption-title">Ocean of Tears</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('薔薇の日.png', 'Day of the Roses')">
+            <img src="薔薇の日.png" alt="Day of the Roses">
+            <div class="caption-overlay">
+                <div class="caption-title">Day of the Roses</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('贖罪success.png', 'Redemption Achieved')">
+            <img src="贖罪success.png" alt="Redemption Achieved">
+            <div class="caption-overlay">
+                <div class="caption-title">Redemption Achieved</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('梅雨入り.png', 'Beginning of Monsoon')">
+            <img src="梅雨入り.png" alt="Beginning of Monsoon">
+            <div class="caption-overlay">
+                <div class="caption-title">Beginning of Monsoon</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('抱き枕風.png', 'Cushion Comfort')">
+            <img src="抱き枕風.png" alt="Cushion Comfort">
+            <div class="caption-overlay">
+                <div class="caption-title">Cushion Comfort</div>
+            </div>
+        </div>
+        <div class="gallery-item" onclick="openModal('無題.png', 'Untitled No.1')">
+            <img src="無題.png" alt="Untitled No.1">
+            <div class="caption-overlay">
+                <div class="caption-title">Untitled No.1</div>
+            </div>
+        </div>
+    </main>
 
-    document.getElementById('reset-btn').addEventListener('click', () => {
-        if(confirm("全データをリセットしますか？")) {
-            db.ref('foods').remove();
-            db.ref('logs').remove();
-            location.reload();
+    <!-- モーダル（アニメーション連動用にクラス制御へ変更） -->
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <div class="modal-wrapper">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <img class="modal-content" id="modalImg" onclick="event.stopPropagation()">
+            <div id="modalCaption"></div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalCaption = document.getElementById('modalCaption');
+
+        function openModal(src, title) {
+            modal.style.display = "block";
+            // ほんの少し遅らせることでフェードインアニメーションを確実に発動させる
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+            modalImg.src = src;
+            modalCaption.innerHTML = title;
+            document.body.style.overflow = 'hidden'; // 背後のスクロールをロック
         }
-    });
 
-    function setupGame() {
-        const container = document.getElementById('container');
-        
-        foodWords.forEach((text) => {
-            const el = document.createElement('div');
-            el.className = 'word';
-            el.innerHTML = `<span>${text}</span><span class="count-badge">0</span>`;
-            el.style.left = `${Math.random() * 80 + 10}%`;
-            el.style.top = `${Math.random() * 80 + 10}%`;
-            container.appendChild(el);
-            elements.push(el);
-
-            db.ref('foods/' + text).on('value', (snap) => {
-                const count = snap.val() || 0;
-                const size = Math.min(24 + (count * 4), 90); 
-                el.style.fontSize = `${size}px`;
-                el.querySelector('.count-badge').innerText = count;
-                el.style.color = count > 0 ? `rgb(255, ${Math.max(0, 255-count*15)}, ${Math.max(0, 255-count*30)})` : "#fff";
-                el.style.zIndex = count + 10;
-                adjustPositions(); // 文字が変化するたびに重なりをチェック
-            });
-
-            el.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                db.ref('foods/' + text).transaction(c => (c || 0) + 1);
-                db.ref('logs').push(`${myName}が「${text}」を育成！`);
-            });
-        });
-
-        db.ref('logs').limitToLast(5).on('child_added', (snap) => {
-            const entry = document.createElement('div');
-            entry.innerText = snap.val();
-            const panel = document.getElementById('log-panel');
-            panel.appendChild(entry);
-            if(panel.childNodes.length > 5) panel.removeChild(panel.firstChild);
-        });
-    }
-
-    function adjustPositions() {
-        for (let i = 0; i < 3; i++) {
-            elements.forEach(elA => {
-                elements.forEach(elB => {
-                    if (elA === elB) return;
-                    const rA = elA.getBoundingClientRect();
-                    const rB = elB.getBoundingClientRect();
-                    const padding = 10;
-                    const isOverlapping = !(rB.left - padding > rA.right + padding || rB.right + padding < rA.left - padding || rB.top - padding > rA.bottom + padding || rB.bottom + padding < rA.top - padding);
-                    if (isOverlapping) {
-                        const diffX = (rA.left + rA.width/2) - (rB.left + rB.width/2);
-                        const diffY = (rA.top + rA.height/2) - (rB.top + rB.height/2);
-                        let moveX = diffX > 0 ? 2 : -2;
-                        let moveY = diffY > 0 ? 2 : -2;
-                        const newLeft = parseFloat(elA.style.left) + moveX;
-                        const newTop = parseFloat(elA.style.top) + moveY;
-                        if (newLeft > 10 && newLeft < 90) elA.style.left = `${newLeft}%`;
-                        if (newTop > 10 && newTop < 90) elA.style.top = `${newTop}%`;
-                    }
-                });
-            });
+        function closeModal() {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = "none";
+            }, 400); // アニメーションが終わるのを待ってから消す
+            document.body.style.overflow = 'auto';
         }
-    }
-</script>
+    </script>
+
 </body>
 </html>
