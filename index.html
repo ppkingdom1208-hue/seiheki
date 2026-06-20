@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YOICHI ARCHIVE</title>
     <style>
-        /* --- 1. グローバルスタイル（リセット & 統一） --- */
+        /* --- 1. グローバルスタイル --- */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -19,10 +19,10 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- 2. ヘンダー（ミニマル & ハイエンド） --- */
+        /* --- 2. ヘンダー --- */
         header {
-            padding: 100px 40px 60px 40px;
-            text-align: left; /* 左寄せにすることで、モダンな建築や写真集のようなレイアウトに */
+            padding: 120px 40px 60px 40px;
+            text-align: left;
             max-width: 1600px;
             margin: 0 auto;
         }
@@ -35,84 +35,82 @@
             opacity: 0.9;
         }
 
-        /* --- 3. メインギャラリー（シネマティック・フルスクリーン） --- */
+        /* --- 3. 幾何学メインギャラリー（Masonry Grid） --- */
         .gallery-container {
             max-width: 1600px;
             margin: 0 auto;
-            padding: 0 40px 100px 40px;
+            padding: 0 40px 120px 40px;
             display: grid;
-            /* 画面幅に合わせて滑らかに列数を可変。最小幅を320pxにして余裕を持たせる */
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 16px; /* 詰まりすぎず、離れすぎない洗練された余白 */
+            /* 1マスを小さめに設定し、それを結合させることで大小さまざまな形を作ります */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-auto-rows: 220px;
+            gap: 20px;
+            grid-auto-flow: dense; /* 隙間を自動で埋める高難度レイアウトアルゴリズム */
         }
 
-        /* --- 4. ギャラリーアイテム（圧倒的な立体感とエフェクト） --- */
+        /* --- 4. ギャラリーアイテム（サイズバリエーション） --- */
         .gallery-item {
             position: relative;
             background-color: #101014;
             overflow: hidden;
             cursor: pointer;
-            aspect-ratio: 4 / 5; /* 縦横比を固定し、ポートフォリオとしての美しさを統一 */
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            /* イージング関数を調整し、極上のヌルヌル感を演出 */
             transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), 
                         box-shadow 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
         
-        /* ホバー時に手前に心地よく浮き出る */
+        /* タイルの形状パターン（幾何学的に噛み合わせるためのクラス） */
+        .size-normal { grid-row: span 2; grid-column: span 1; } /* 縦長（基本形） */
+        .size-tall   { grid-row: span 3; grid-column: span 1; } /* 超縦長：存在感を出したい絵 */
+        .size-wide   { grid-row: span 2; grid-column: span 2; } /* 大型正方形〜横長：特にお気に入りの絵 */
+
         .gallery-item:hover {
-            transform: scale(1.02);
+            transform: scale(1.015);
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
             z-index: 2;
         }
 
-        /* 画像自体のエフェクト：初期状態は少し暗く、うっすらブラー（ノイズ） */
         .gallery-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
-            filter: brightness(0.75) blur(0px);
-            transform: scale(1.0);
+            filter: brightness(0.8);
             transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), 
                         filter 0.8s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* ホバー時に画像が奥へ沈み込みながら、鮮明に光り輝く */
         .gallery-item:hover img {
-            transform: scale(1.08);
-            filter: brightness(1.05) blur(0px);
+            transform: scale(1.05);
+            filter: brightness(1.05);
         }
 
-        /* --- 5. キャプション（絵を邪魔しないオーバーレイ） --- */
+        /* --- 5. キャプション（オーバーレイ） --- */
         .caption-overlay {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
             padding: 40px 24px 24px 24px;
-            /* 下から上へ滑らかなグラデーションを敷いて文字の視認性を確保 */
             background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
             opacity: 0;
             transform: translateY(10px);
             transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* ホバーした時だけ、静かに美しく浮かび上がる */
         .gallery-item:hover .caption-overlay {
             opacity: 1;
             transform: translateY(0);
         }
 
         .caption-title {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 300;
             letter-spacing: 2px;
             color: #ffffff;
-            margin-bottom: 4px;
         }
 
-        /* --- 6. モーダル（ガラスモーフィズムを駆使した没入空間） --- */
+        /* --- 6. モーダル --- */
         .modal {
             display: none;
             position: fixed;
@@ -122,7 +120,6 @@
             width: 100%;
             height: 100%;
             background-color: rgba(4, 4, 6, 0.85);
-            /* 背景をボカす最新のエフェクト。これだけで一気にプロ感が出ます */
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             opacity: 0;
@@ -191,7 +188,7 @@
             transform: rotate(90deg);
         }
 
-        /* --- 7. レスポンシブ（スマホ最適化） --- */
+        /* --- 7. スマホ最適化 --- */
         @media (max-width: 768px) {
             header {
                 padding: 60px 24px 40px 24px;
@@ -201,16 +198,25 @@
                 letter-spacing: 8px;
             }
             .gallery-container {
-                padding: 0 24px 60px 24px;
-                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-                gap: 12px;
+                padding: 0 16px 60px 16px;
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* スマホでは2列になりやすいよう調整 */
+                grid-auto-rows: 140px;
+                gap: 10px;
             }
-            /* スマホはホバーがないため、常にキャプションをうっすら表示させておく */
+            /* スマホでも窮屈にならないよう、特大サイズ（wide）は1列幅に自動縮小 */
+            .size-wide {
+                grid-row: span 2;
+                grid-column: span 2;
+            }
             .caption-overlay {
                 opacity: 1;
                 transform: translateY(0);
                 background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
-                padding: 20px 16px 12px 16px;
+                padding: 16px 12px 8px 12px;
+            }
+            .caption-title {
+                font-size: 0.75rem;
+                letter-spacing: 1px;
             }
             .close-btn {
                 top: 20px;
@@ -226,188 +232,131 @@
     </header>
 
     <main class="gallery-container">
-        <!-- 1〜10枚目 -->
-        <div class="gallery-item" onclick="openModal('シスター2.png', 'Sisterhood II')">
+        <!-- 
+          各アイテムの class="gallery-item ○○○" の部分で大きさを指定しています。
+          ・size-normal : 通常（縦長）
+          ・size-wide   : 大型（正方形・横長）★特に目立たせたい絵に配置
+          ・size-tall   : 超縦長
+        -->
+        <div class="gallery-item size-normal" onclick="openModal('シスター2.png', 'Sisterhood II')">
             <img src="シスター2.png" alt="Sisterhood II">
-            <div class="caption-overlay">
-                <div class="caption-title">Sisterhood II</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Sisterhood II</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('スーツおじ.png', 'The Gentleman in Suit')">
+        <div class="gallery-item size-wide" onclick="openModal('スーツおじ.png', 'The Gentleman in Suit')">
             <img src="スーツおじ.png" alt="The Gentleman in Suit">
-            <div class="caption-overlay">
-                <div class="caption-title">The Gentleman in Suit</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">The Gentleman in Suit</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('バー.png', 'Midnight Lounge')">
+        <div class="gallery-item size-normal" onclick="openModal('バー.png', 'Midnight Lounge')">
             <img src="バー.png" alt="Midnight Lounge">
-            <div class="caption-overlay">
-                <div class="caption-title">Midnight Lounge</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Midnight Lounge</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('バースデー2026.png', 'Anniversary 2026')">
+        <div class="gallery-item size-tall" onclick="openModal('バースデー2026.png', 'Anniversary 2026')">
             <img src="バースデー2026.png" alt="Anniversary 2026">
-            <div class="caption-overlay">
-                <div class="caption-title">Anniversary 2026</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Anniversary 2026</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('demon.png', 'Demon\'s Whisper')">
+        <div class="gallery-item size-normal" onclick="openModal('demon.png', 'Demon\'s Whisper')">
             <img src="demon.png" alt="Demon's Whisper">
-            <div class="caption-overlay">
-                <div class="caption-title">Demon's Whisper</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Demon's Whisper</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('あーん.png', 'Sweet Temptation')">
+        <div class="gallery-item size-normal" onclick="openModal('あーん.png', 'Sweet Temptation')">
             <img src="あーん.png" alt="Sweet Temptation">
-            <div class="caption-overlay">
-                <div class="caption-title">Sweet Temptation</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Sweet Temptation</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('エクスタシー.png', 'Ecstasy')">
+        <div class="gallery-item size-wide" onclick="openModal('エクスタシー.png', 'Ecstasy')">
             <img src="エクスタシー.png" alt="Ecstasy">
-            <div class="caption-overlay">
-                <div class="caption-title">Ecstasy</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Ecstasy</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('オールバックおじ.png', 'Slick Back Elegance')">
+        <div class="gallery-item size-normal" onclick="openModal('オールバックおじ.png', 'Slick Back Elegance')">
             <img src="オールバックおじ.png" alt="Slick Back Elegance">
-            <div class="caption-overlay">
-                <div class="caption-title">Slick Back Elegance</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Slick Back Elegance</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('おはよう.png', 'Good Morning, Daylight')">
+        <div class="gallery-item size-tall" onclick="openModal('おはよう.png', 'Good Morning, Daylight')">
             <img src="おはよう.png" alt="Good Morning, Daylight">
-            <div class="caption-overlay">
-                <div class="caption-title">Good Morning, Daylight</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Good Morning, Daylight</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('こあら.png', 'Coala Hug')">
+        <div class="gallery-item size-normal" onclick="openModal('こあら.png', 'Coala Hug')">
             <img src="こあら.png" alt="Coala Hug">
-            <div class="caption-overlay">
-                <div class="caption-title">Coala Hug</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Coala Hug</div></div>
         </div>
-
-        <!-- 11〜20枚目 -->
-        <div class="gallery-item" onclick="openModal('赤鬼.png', 'Crimson Ogre')">
+        <div class="gallery-item size-normal" onclick="openModal('赤鬼.png', 'Crimson Ogre')">
             <img src="赤鬼.png" alt="Crimson Ogre">
-            <div class="caption-overlay">
-                <div class="caption-title">Crimson Ogre</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Crimson Ogre</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('断罪ギルティ.png', 'Guilty Judgment')">
+        <div class="gallery-item size-wide" onclick="openModal('断罪ギルティ.png', 'Guilty Judgment')">
             <img src="断罪ギルティ.png" alt="Guilty Judgment">
-            <div class="caption-overlay">
-                <div class="caption-title">Guilty Judgment</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Guilty Judgment</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('みにおじ.png', 'Chibi Gentleman')">
+        <div class="gallery-item size-normal" onclick="openModal('みにおじ.png', 'Chibi Gentleman')">
             <img src="みにおじ.png" alt="Chibi Gentleman">
-            <div class="caption-overlay">
-                <div class="caption-title">Chibi Gentleman</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Chibi Gentleman</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('雨の向こう.png', 'Beyond the Rain')">
+        <div class="gallery-item size-normal" onclick="openModal('雨の向こう.png', 'Beyond the Rain')">
             <img src="雨の向こう.png" alt="Beyond the Rain">
-            <div class="caption-overlay">
-                <div class="caption-title">Beyond the Rain</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Beyond the Rain</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('騎手おじ.png', 'The Jockey\'s Pride')">
+        <div class="gallery-item size-tall" onclick="openModal('騎手おじ.png', 'The Jockey\'s Pride')">
             <img src="騎手おじ.png" alt="The Jockey's Pride">
-            <div class="caption-overlay">
-                <div class="caption-title">The Jockey's Pride</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">The Jockey's Pride</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('喫煙おじ.png', 'Purple Smoke')">
+        <div class="gallery-item size-normal" onclick="openModal('喫煙おじ.png', 'Purple Smoke')">
             <img src="喫煙おじ.png" alt="Purple Smoke">
-            <div class="caption-overlay">
-                <div class="caption-title">Purple Smoke</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Purple Smoke</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('競馬おじ.png', 'Trackside Vagabond')">
+        <div class="gallery-item size-wide" onclick="openModal('競馬おじ.png', 'Trackside Vagabond')">
             <img src="競馬おじ.png" alt="Trackside Vagabond">
-            <div class="caption-overlay">
-                <div class="caption-title">Trackside Vagabond</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Trackside Vagabond</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('限界アイドル.png', 'Fading Idol')">
+        <div class="gallery-item size-normal" onclick="openModal('限界アイドル.png', 'Fading Idol')">
             <img src="限界アイドル.png" alt="Fading Idol">
-            <div class="caption-overlay">
-                <div class="caption-title">Fading Idol</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Fading Idol</div></div>
         </div>
         <div class="gallery-item" onclick="openModal('向こう側.png', 'The Other Side')">
             <img src="向こう側.png" alt="The Other Side">
-            <div class="caption-overlay">
-                <div class="caption-title">The Other Side</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">The Other Side</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('雑誌表紙用.png', 'Cover Story')">
+        <div class="gallery-item size-tall" onclick="openModal('雑誌表紙用.png', 'Cover Story')">
             <img src="雑誌表紙用.png" alt="Cover Story">
-            <div class="caption-overlay">
-                <div class="caption-title">Cover Story</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Cover Story</div></div>
         </div>
-
-        <!-- 21〜29枚目 -->
-        <div class="gallery-item" onclick="openModal('無題2.png', 'Untitled No.2')">
+        <div class="gallery-item size-normal" onclick="openModal('無題2.png', 'Untitled No.2')">
             <img src="無題2.png" alt="Untitled No.2">
-            <div class="caption-overlay">
-                <div class="caption-title">Untitled No.2</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Untitled No.2</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('裏垢.png', 'Secret Account')">
+        <div class="gallery-item size-wide" onclick="openModal('裏垢.png', 'Secret Account')">
             <img src="裏垢.png" alt="Secret Account">
-            <div class="caption-overlay">
-                <div class="caption-title">Secret Account</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Secret Account</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('裏垢男子.png', 'Behind the Screen')">
+        <div class="gallery-item size-normal" onclick="openModal('裏垢男子.png', 'Behind the Screen')">
             <img src="裏垢男子.png" alt="Behind the Screen">
-            <div class="caption-overlay">
-                <div class="caption-title">Behind the Screen</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Behind the Screen</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('涙海.png', 'Ocean of Tears')">
+        <div class="gallery-item size-normal" onclick="openModal('涙海.png', 'Ocean of Tears')">
             <img src="涙海.png" alt="Ocean of Tears">
-            <div class="caption-overlay">
-                <div class="caption-title">Ocean of Tears</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Ocean of Tears</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('薔薇の日.png', 'Day of the Roses')">
+        <div class="gallery-item size-tall" onclick="openModal('薔薇の日.png', 'Day of the Roses')">
             <img src="薔薇の日.png" alt="Day of the Roses">
-            <div class="caption-overlay">
-                <div class="caption-title">Day of the Roses</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Day of the Roses</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('贖罪success.png', 'Redemption Achieved')">
+        <div class="gallery-item size-normal" onclick="openModal('贖罪success.png', 'Redemption Achieved')">
             <img src="贖罪success.png" alt="Redemption Achieved">
-            <div class="caption-overlay">
-                <div class="caption-title">Redemption Achieved</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Redemption Achieved</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('梅雨入り.png', 'Beginning of Monsoon')">
+        <div class="gallery-item size-wide" onclick="openModal('梅雨入り.png', 'Beginning of Monsoon')">
             <img src="梅雨入り.png" alt="Beginning of Monsoon">
-            <div class="caption-overlay">
-                <div class="caption-title">Beginning of Monsoon</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Beginning of Monsoon</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('抱き枕風.png', 'Cushion Comfort')">
+        <div class="gallery-item size-normal" onclick="openModal('抱き枕風.png', 'Cushion Comfort')">
             <img src="抱き枕風.png" alt="Cushion Comfort">
-            <div class="caption-overlay">
-                <div class="caption-title">Cushion Comfort</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Cushion Comfort</div></div>
         </div>
-        <div class="gallery-item" onclick="openModal('無題.png', 'Untitled No.1')">
+        <div class="gallery-item size-normal" onclick="openModal('無題.png', 'Untitled No.1')">
             <img src="無題.png" alt="Untitled No.1">
-            <div class="caption-overlay">
-                <div class="caption-title">Untitled No.1</div>
-            </div>
+            <div class="caption-overlay"><div class="caption-title">Untitled No.1</div></div>
         </div>
     </main>
 
-    <!-- モーダル（アニメーション連動用にクラス制御へ変更） -->
+    <!-- モーダル（拡大画面） -->
     <div id="imageModal" class="modal" onclick="closeModal()">
         <div class="modal-wrapper">
             <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -423,20 +372,19 @@
 
         function openModal(src, title) {
             modal.style.display = "block";
-            // ほんの少し遅らせることでフェードインアニメーションを確実に発動させる
             setTimeout(() => {
                 modal.classList.add('show');
             }, 10);
             modalImg.src = src;
             modalCaption.innerHTML = title;
-            document.body.style.overflow = 'hidden'; // 背後のスクロールをロック
+            document.body.style.overflow = 'hidden';
         }
 
         function closeModal() {
             modal.classList.remove('show');
             setTimeout(() => {
                 modal.style.display = "none";
-            }, 400); // アニメーションが終わるのを待ってから消す
+            }, 400);
             document.body.style.overflow = 'auto';
         }
     </script>
