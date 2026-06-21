@@ -232,6 +232,12 @@
     </header>
 
     <main class="gallery-container">
+        <!-- 
+          各アイテムの class="gallery-item ○○○" の部分で大きさを指定しています。
+          ・size-normal : 通常（縦長）
+          ・size-wide   : 大型（正方形・横長）★特に目立たせたい絵に配置
+          ・size-tall   : 超縦長
+        -->
         <div class="gallery-item size-normal" onclick="openModal('シスター2.PNG', 'Sisterhood II')">
             <img src="シスター2.PNG" alt="Sisterhood II">
             <div class="caption-overlay"><div class="caption-title">Sisterhood II</div></div>
@@ -350,6 +356,7 @@
         </div>
     </main>
 
+    <!-- モーダル（拡大画面） -->
     <div id="imageModal" class="modal" onclick="closeModal()">
         <div class="modal-wrapper">
             <span class="close-btn" onclick="closeModal()">&times;</span>
